@@ -1,0 +1,53 @@
+#-----------------------------------------------------------
+# This is the deployment and service config for the mongodb
+#    component of our kubernetes cluster.
+#-----------------------------------------------------------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-deployment # name of deployment
+  labels:
+    app: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels: # match all pods with label app:label
+      app: mongo
+  template:
+    metadata:
+      labels: #podname
+        app: mongo
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:7.0.3
+        resources: # set allowed hardware resources for container
+          limits:
+            memory: 600Mi
+            cpu: 1
+        ports:
+        - containerPort: 27017
+        env: # environment variables for container
+        - name: MONGO_INITDB_ROOT_USERNAME # mongodb username
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-user
+        - name: MONGO_INITDB_ROOT_PASSWORD # mongodb password
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-pasword
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service # name of servcie
+spec:
+  selector:
+    app: mongo # same as podname
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017 # same as containerPort

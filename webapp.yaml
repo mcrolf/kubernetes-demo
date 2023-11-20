@@ -1,0 +1,61 @@
+#------------------------------------------------------------------
+# configures deployment and service for our web application
+#------------------------------------------------------------------
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment # name of deployment
+  labels:
+    app: webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels: # match all pods with label app:label
+      app: webapp
+  template:
+    metadata:
+      labels: #podname
+        app: webapp
+    spec:
+      containers:
+      - name: mongodb
+        image: nanajanashia/k8s-demo-app:v1.0 # demo node js app
+        resources: # set allowed hardware resources for container
+          limits:
+            memory: 600Mi
+            cpu: '1'
+        ports:
+        - containerPort: 3000
+        env:
+        - name: USER_NAME # webapp user
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-user
+        - name: USER_PWD # webapp password
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-pasword
+        - name: DB_URL # database endpoint
+          valueFrom:
+            configMapKeyRef:
+              name: mongo-config
+              key: mongo-url
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service # name of servcie
+spec:
+  type: NodePort # external service type
+  selector:
+    app: webapp # same as podname
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000 # same as containerPort
+      nodePort: 30100 # port to access pod
